@@ -1,6 +1,7 @@
 package gohs.scyoly.core;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +39,19 @@ public class Crew {
 	
 	public Set<Entry<Event,gohs.scyoly.core.Entry>> entrySet() {
 		 return roster.entrySet();
+	}
+	
+	public List<TimeRange> getSortedTimeRanges() {
+		
+		List<TimeRange> allTimeRanges = new ArrayList<>(roster.size());
+		
+		// iterate over roster and get time ranges
+		for (Event event : roster.keySet()) {
+			allTimeRanges.add(event.getTimeRange());
+		}
+		
+		Collections.sort(allTimeRanges); // sort
+		return allTimeRanges;
 	}
 	
 	

@@ -1,6 +1,6 @@
 package gohs.scyoly.core;
 
-public class TimeRange {
+public class TimeRange implements Comparable<TimeRange> {
 
 	private Time start;
 	private Time stop;
@@ -36,6 +36,16 @@ public class TimeRange {
 	@Override
 	public String toString() {
 		return start.toString() + "-" + stop.toString();
+	}
+
+	@Override
+	public int compareTo(TimeRange o) {
+		if (start.compareTo(o.start) < 0)
+			return -1;
+		else if (start.compareTo(o.start) > 0)
+			return 1;
+		else
+			return 0;
 	}
 
 }

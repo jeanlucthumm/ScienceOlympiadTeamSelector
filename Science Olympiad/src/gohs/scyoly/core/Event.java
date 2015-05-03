@@ -43,6 +43,19 @@ public class Event {
 		return null;
 	}
 	
+	public static List<TimeRange> getSortedTimeRanges() {
+		List<TimeRange> allTimeRanges = new ArrayList<>(allEvents.size());
+		
+		// iterate over all events and get time ranges
+		for (Event event : allEvents) {
+			allTimeRanges.add(event.timeRange);
+		}
+		
+		Collections.sort(allTimeRanges); // sort
+		
+		return allTimeRanges;
+	}
+	
 	private String name;
 	private TimeRange timeRange;
 	private List<Entry> entries;
