@@ -80,11 +80,29 @@ public class Team {
 		return asString;
 	}
 	
+	public int getSize() {
+		return members.size();
+	}
+	
 	public boolean sharesStudents(Team o) {
 		for (Student s1 : members)
 			for (Student s2 : o.members)
 				if (s1 == s2)
 					return true;
+		return false;
+	}
+	
+	public boolean containsStudent(Student s) {
+		for (Student student : members)
+			if (student.equals(s))
+				return true;
+		return false;
+	}
+	
+	public boolean containsStudent(String name) {
+		for (Student student : members)
+			if (student.getName().equals(name))
+				return true;
 		return false;
 	}
 

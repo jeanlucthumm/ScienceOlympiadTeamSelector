@@ -7,14 +7,19 @@ import gohs.scyoly.core.TimeRange;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.security.AllPermission;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import jxl.Workbook;
+import jxl.format.Alignment;
+import jxl.format.Border;
+import jxl.format.BorderLineStyle;
 import jxl.format.Colour;
 import jxl.read.biff.BiffException;
+import jxl.write.Blank;
 import jxl.write.Label;
+import jxl.write.Number;
 import jxl.write.WritableCellFormat;
 import jxl.write.WritableFont;
 import jxl.write.WritableSheet;
@@ -79,9 +84,11 @@ public class DataWriter {
 	}
 
 	private File output;
+	private int lastRow; // used to know where to append things
 
 	public DataWriter(String path) {
 		output = new File(path);
+		lastRow = 0;
 	}
 
 	public void writeCrew(Crew crew) throws IOException, BiffException,
@@ -99,6 +106,10 @@ public class DataWriter {
 			sheet = mod.createSheet("Team Listing", 0);
 		}
 
+		// check if need appending
+		if (lastRow != 0)
+			lastRow++;
+
 		// set up formats
 		// bold
 		WritableFont boldFont = new WritableFont(WritableFont.ARIAL, 10,
@@ -109,38 +120,84 @@ public class DataWriter {
 		WritableFont italicFont = new WritableFont(WritableFont.ARIAL, 10,
 				WritableFont.NO_BOLD, true);
 		WritableCellFormat italic = new WritableCellFormat(italicFont);
+		
+		// center
+		WritableCellFormat centre = new WritableCellFormat();
+		centre.setAlignment(Alignment.CENTRE);
 
+		// FIXME make banded rows in terms of color
 		// block cell
 		WritableCellFormat blockCell = new WritableCellFormat();
 		blockCell.setBackground(Colour.LIGHT_BLUE);
+		blockCell.setBorder(Border.ALL, BorderLineStyle.THIN);
 
 		// set up the time row
-		List<TimeRange> timeRanges = new ArrayList<>(
-				crew.getSortedTimeRanges());
+		List<TimeRange> timeRanges = new ArrayList<>();
+		List<TimeRange> temp = crew.getSortedTimeRanges();
+		for (int i = 0; i < temp.size(); i++) {
+			if (timeRanges.size() > 0
+					&& temp.get(i)
+							.equals(timeRanges.get(timeRanges.size() - 1)))
+				continue;
+
+			timeRanges.add(temp.get(i));
+		}
+
 		String[] timeRangesAsString = new String[timeRanges.size()];
-		
+		// convert to string
 		int count = 0;
 		for (TimeRange timeRange : timeRanges) {
 			timeRangesAsString[count++] = timeRange.toString();
 		}
-		
+
 		// max columns should be number of time ranges plus one
 		int columnNum = timeRangesAsString.length + 1;
 
 		// FIXME Events should be in the same order as they were originally put
 		// in
-		sheet.addCell(new Label(0, 0, "Event", bold));
+		String crewName = "Team " + crew.getRank();
+		sheet.addCell(new Label(0, lastRow, crewName, bold));
 
 		// print time range row
 		for (int col = 1; col < timeRangesAsString.length + 1; col++) {
-			sheet.addCell(new Label(col, 0, timeRangesAsString[col - 1], italic));
+			sheet.addCell(new Label(col, lastRow, timeRangesAsString[col - 1], centre));
 		}
-		
-		// print events and teams
-		// loop through events
-		List<Event> events = new ArrayList<>(Event.getAllEvents())
-		for (int row = 1; row)
 
+		int teamColumn;
+		lastRow++;
+		for (Map.Entry<Event, gohs.scyoly.core.Entry> rosterEntry : crew
+				.getRoster().entrySet()) {
+			// print event name
+			sheet.addCell(new Label(0, lastRow, rosterEntry.getKey().toString()));
+
+			// find correct column
+			teamColumn = timeRanges
+					.indexOf(rosterEntry.getKey().getTimeRange()) + 1;
+
+			if (teamColumn == 0)
+				throw new IndexOutOfBoundsException();
+
+			// print team
+			sheet.addCell(new Label(teamColumn, lastRow, rosterEntry.getValue()
+					.getTeam().toString(), italic));
+
+			// block out cells
+			for (int i = 1; i < columnNum; i++) {
+				if (i != teamColumn)
+					sheet.addCell(new Blank(i, lastRow, blockCell));
+			}
+
+			// move on to next row
+			lastRow++;
+		}
+
+		// write team statistics
+		lastRow++;
+		sheet.addCell(new Label(0, lastRow, "Average Rank:", bold));
+		sheet.addCell(new Number(1, lastRow, crew.getAverageRank()));
+		lastRow++;
+
+		mod.write();
+		mod.close();
 	}
-
 }

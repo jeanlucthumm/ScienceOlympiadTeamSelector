@@ -18,6 +18,10 @@ public class Entry implements Comparable<Entry> {
 		return rank;
 	}
 	
+	public int getTeamSize() {
+		return team.getSize();
+	}
+	
 	@Override
 	public int compareTo(Entry o) {
 		if (this.rank < o.rank)

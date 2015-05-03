@@ -47,5 +47,15 @@ public class TimeRange implements Comparable<TimeRange> {
 		else
 			return 0;
 	}
+	
+	@Override
+	public boolean equals(Object obj) {
+		if (obj instanceof TimeRange) {
+			TimeRange o = (TimeRange) obj;
+			return start.equals(o.start) && stop.equals(o.stop);
+		} else {
+			return false;
+		}
+	}
 
 }

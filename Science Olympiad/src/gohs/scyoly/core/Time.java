@@ -50,4 +50,14 @@ public class Time implements Comparable<Time> {
 			return false;
 	}
 	
+	@Override
+	public String toString() {
+		String hour = String.format("%2s", Integer.toString(this.hour))
+				.replace(' ', '0');
+		String min = String.format("%2s", Integer.toString(this.min)).replace(
+				' ', '0');
+
+		return hour + ":" + min;
+	}
+	
 }

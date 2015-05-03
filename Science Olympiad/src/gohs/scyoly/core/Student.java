@@ -54,7 +54,7 @@ public class Student {
 	public boolean equals(Object o) {
 		if (o instanceof Student) {
 			Student s = (Student) o;
-			return name.equals(s.name);
+			return name.equalsIgnoreCase(s.name);
 		} else {
 			return false;
 		}
