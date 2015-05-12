@@ -196,6 +196,9 @@ public class DataWriter {
 		sheet.addCell(new Label(0, lastRow, "Average Rank:", bold));
 		sheet.addCell(new Number(1, lastRow, crew.getAverageRank()));
 		lastRow++;
+		sheet.addCell(new Label(0, lastRow, "Crew Size:", bold));
+		sheet.addCell(new Number(1, lastRow, crew.getSize()));
+		lastRow++;
 
 		mod.write();
 		mod.close();

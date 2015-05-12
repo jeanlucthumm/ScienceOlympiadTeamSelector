@@ -4,6 +4,8 @@ import gohs.scyoly.io.DataReader;
 import gohs.scyoly.io.DataWriter;
 
 import java.io.IOException;
+import java.util.AbstractMap;
+import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -13,7 +15,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Stack;
-import java.util.TreeMap;
 
 import jxl.read.biff.BiffException;
 import jxl.write.WriteException;
@@ -136,16 +137,40 @@ public class Assembler {
 		if (crew.getSize() > 15) {
 			System.out.println("Crew reduction neccessary"); // DEBUG
 
-			// get list of the next step down in feeder
-			LinkedHashMap<Event, gohs.scyoly.core.Entry> sorted = new LinkedHashMap<>(feeder.size());
+			List<Map.Entry<Event, Entry>> sorted = new LinkedList<Map.Entry<Event, Entry>>();
 
 			for (Map.Entry<Event, Stack<Entry>> feederEntry : feeder.entrySet()) {
-				sorted.put(feederEntry.getKey(), feederEntry.getValue().peek());
+				Map.Entry<Event, Entry> temp = new AbstractMap.SimpleEntry<>(
+						feederEntry.getKey(), feederEntry.getValue().peek());
+				sorted.add(temp);
 			}
-			
-			BubbleSort.mapSort(sorted, new EventComparator(crew));
 
-			System.out.println(sorted.entrySet()); // DEBUG
+			// sort by how many students are already on team (most favored)
+			EventComparator eventComparator = new EventComparator(crew);
+			Sorter.mapListSort(sorted, eventComparator);
+			System.out.println(sorted); // DEBUG
+
+			Map.Entry<Event, Entry> temp;
+			while (crew.getSize() > 15) {
+				// retrieve most favored team for replacement
+				temp = sorted.get(0);
+				sorted.remove(0);
+
+				// retrieve values from map
+				event = temp.getKey();
+				entry = temp.getValue();
+
+				// perform the replacement
+				Stack<Entry> feederEventStack = feeder.get(event);
+				feederEventStack.pop(); // remove team we are adding from feeder
+				feederEventStack.push(crew.add(event, entry)); // add removed
+																// team to
+																// feeder
+				
+				// resort because conditions have changed
+				Sorter.mapListSort(sorted, eventComparator);
+				System.out.println("Size of crew after this iteration: " + crew.getSize() + " | " + event + ": " + entry);
+			}
 		}
 
 	}
@@ -155,7 +180,8 @@ public class Assembler {
 		private static final long serialVersionUID = 1L;
 	}
 
-	private class EventComparator implements Comparator<Map.Entry<Event, gohs.scyoly.core.Entry>> {
+	private class EventComparator implements
+			Comparator<Map.Entry<Event, gohs.scyoly.core.Entry>> {
 
 		Crew crew;
 
@@ -166,43 +192,51 @@ public class Assembler {
 		@Override
 		public int compare(java.util.Map.Entry<Event, Entry> o1,
 				java.util.Map.Entry<Event, Entry> o2) {
-			
-			int membCount1 = 0;
-			int membCount2 = 0;
 
-			// FIXME students that have fewer events on the crew should be
-			// preferred
+			int membCount1 = 0; // keeps track of how many students on the
+			int membCount2 = 0; // team are part of the crew
+
+			int eventCount1 = 0; // keeps track of how many events the student
+			int eventCount2 = 0; // on the crew is part of
+
 			for (Student s : o1.getValue().getTeam().getMembers())
 				if (crew.containsStudent(s)) {
 					membCount1++;
-					continue;
+					eventCount1 += s.getEvents().size();
 				}
 
 			for (Student s : o2.getValue().getTeam().getMembers())
 				if (crew.containsStudent(s)) {
 					membCount2++;
-					continue;
+					eventCount2 += s.getEvents().size();
 				}
 
-			return Integer.compare(membCount1, membCount2);
+			// ties must be settled with event counts so that
+			// students with less events are favored
+			if (Integer.compare(membCount1, membCount2) == 0) {
+				// the smaller the event count, the more it is favored
+				return Integer.compare(eventCount2, eventCount1);
+			} else
+				return Integer.compare(membCount1, membCount2);
 		}
 
 	}
 
-	private static class BubbleSort {
+	private static class Sorter {
 
+		// FIXME change the algorithm to match the mapListSort function
 		public static <K, V> void mapSort(LinkedHashMap<K, V> map,
 				Comparator<Map.Entry<K, V>> comparator) {
-			
+
 			// array list is more efficient
 			ArrayList<Map.Entry<K, V>> entries = new ArrayList<>(map.entrySet());
 			int i; // var for iterating
 			boolean swap = true; // false if no swaps occurred (list is sorted)
 			Map.Entry<K, V> temp;
-			
-			while(swap) {
+
+			while (swap) {
 				swap = false; // assume no swap will occur
-				for (i = 0; i < entries.size() -1; i++)
+				for (i = 0; i < entries.size() - 1; i++)
 					if (comparator.compare(entries.get(i), entries.get(i + 1)) < 0) {
 						temp = entries.get(i);
 						entries.set(i, entries.get(i + 1));
@@ -210,11 +244,25 @@ public class Assembler {
 						swap = true;
 					}
 			}
-			
+
 			// re-factor the original map
 			map.clear();
 			for (Map.Entry<K, V> entry : entries)
 				map.put(entry.getKey(), entry.getValue());
+		}
+
+		public static <K, V> void mapListSort(List<Map.Entry<K, V>> map,
+				Comparator<Map.Entry<K, V>> comparator) {
+			Map.Entry<K, V> temp;
+			for (int i = 0; i < map.size() - 1; i++) { // work down from end
+				for (int j = 1; j < map.size() - i; j++) { // sort upwards to i
+					if (comparator.compare(map.get(j - 1), map.get(j)) < 0) {
+						temp = map.get(j - 1);
+						map.set(j - 1, map.get(j));
+						map.set(j, temp);
+					}
+				}
+			}
 		}
 
 	}
@@ -248,15 +296,12 @@ public class Assembler {
 		System.out.println(a.simultEvents.entrySet());
 		System.out.println(a.feeder.get(e));
 		a.removeFeederTimeConflicts();
-		System.out.println("Astronomy entries after resolution:");
-		System.out.println(a.feeder.get(e));
-		System.out.println("Cell Biology entries after resolution");
-		System.out.println(a.feeder.get(Event.getEventByName("cell biology")));
 		System.out.println();
 
-		System.out.println("Entry set of first crew");
 		a.generateCrews();
-		System.out.println(Crew.getAllCrews().get(0).entrySet());
+
+		System.out.println("Registered events of Chris");
+		System.out.println(Student.getStudentByName("chris").getEvents());
 
 		dw.writeCrew(Crew.getAllCrews().get(0));
 		dw.writeCrew(Crew.getAllCrews().get(0));

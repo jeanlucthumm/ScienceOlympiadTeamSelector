@@ -24,6 +24,9 @@ public class DataReader {
 
 	// FIXME NumberFormatException needs to be handled when numbers are not put
 	// in the right way
+
+	// FIXME add a column that contains seniors. If it is left empty, generate a
+	// JPanel with check boxes, and then modify the input file as well.
 	public void populateEvents() {
 
 		String eventName;
@@ -58,8 +61,7 @@ public class DataReader {
 
 				currentEvent.addEntry(new Team(studentName), rank);
 			}
-		} 
+		}
 	}
-	
-	
+
 }

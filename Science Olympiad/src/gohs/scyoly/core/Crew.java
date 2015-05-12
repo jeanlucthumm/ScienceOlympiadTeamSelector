@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 public class Crew {
@@ -32,53 +31,67 @@ public class Crew {
 		return rank;
 	}
 
-	public Map<Event, gohs.scyoly.core.Entry> getRoster() {
+	public Map<Event, Entry> getRoster() {
 		return roster;
 	}
 
-	public void add(Event event, gohs.scyoly.core.Entry entry) {
+	public Entry add(Event event, Entry entry) {
 		// capture original students if they are there
-		List<Student> prev = null;
-		if (roster.containsKey(event)) {
+		List<Student> prev = null; // students to be replaced
+		Entry res = null; // entry of event to be replaced
+		
+		if (roster.containsKey(event)) { // entry already present
 			prev = new ArrayList<>();
-			prev.addAll(roster.get(event).getTeam().getMembers());
+			res = roster.get(event);
+			
+			List<Student> temp = res.getTeam().getMembers();
+			prev.addAll(temp);
+			
+			// tell each student they are not part of event anymore
+			for (Student s : temp) {
+				s.removeEvent(event);
+			}
 		}
 
+		// add the students to the roster and notify them
 		roster.put(event, entry);
 		List<Student> members = entry.getTeam().getMembers();
 		for (Student s : members) {
-			if (containsStudent(s))
-				continue;
-			else
-				students.add(s);
+			if (containsStudent(s)) {
+				s.addEvent(event); // notify student
+			}
+			else {
+				students.add(s); // add to crew
+				s.addEvent(event); // notify student
+			}
 		}
 
 		// if there were original students, check if they need to be discarded
+		// (they are not enrolled in any other events for this crew)
 		if (prev != null) {
 			boolean contains = false;
 			for (Student s : prev) {
-				if (!containsStudent(s))
-					students.remove(s);
 
-				small: for (Map.Entry<Event, gohs.scyoly.core.Entry> rosterEntry : roster
+				for (Map.Entry<Event, Entry> rosterEntry : roster
 						.entrySet()) {
 					if (rosterEntry.getValue().getTeam().containsStudent(s)) {
 						contains = true;
-						break small;
+						break;
 					}
 				}
 				
-				if (!contains)
+				if (!contains) // student is no longer part of crew
 					students.remove(s);
 			}
-		}
+		} // end of big if
+		return res;
 	}
 
-	public Set<Entry<Event, gohs.scyoly.core.Entry>> entrySet() {
+	public Set<Map.Entry<Event, Entry>> entrySet() {
 		return roster.entrySet();
 	}
 	
-	public gohs.scyoly.core.Entry getEntry(Event e) {
+	public Entry getEntry(Event e) {
 		return roster.get(e);
 	}
 
@@ -97,7 +110,7 @@ public class Crew {
 
 	public double getAverageRank() {
 		double total = 0;
-		for (Map.Entry<Event, gohs.scyoly.core.Entry> rosterEntry : roster
+		for (Map.Entry<Event, Entry> rosterEntry : roster
 				.entrySet()) {
 			total += rosterEntry.getValue().getRank();
 		}
