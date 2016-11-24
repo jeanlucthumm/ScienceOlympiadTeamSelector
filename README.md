@@ -1,5 +1,7 @@
 # ScienceOlympiadTeamSelector
 
+**Note: this project is on hold until a suitable algorithm and mathematical model is found.**
+
 <h6>Abstract</h6>
 The Science Olympiad Team Selector is an application that aims to facilitate easier team generation
 for the high school Science Olympiad competition. Expected usage is to provide an input file in the form of
